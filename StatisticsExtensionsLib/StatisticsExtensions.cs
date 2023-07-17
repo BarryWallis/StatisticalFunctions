@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -49,7 +50,7 @@ public static class StatisticsExtensions
         return values.Order()
                      .Skip(numberToRemove)
                      .Take(numberOfValues)
-                     .Select(x=>Convert.ToDouble(x))
+                     .Select(x => Convert.ToDouble(x))
                      .Average();
     }
 
@@ -93,4 +94,122 @@ public static class StatisticsExtensions
         return values.TruncatedMean(numberToRemove);
     }
 
+    /// <summary>
+    /// Return the middle value from a list of numbers.
+    /// </summary>
+    /// <typeparam name="T">The type of the list. Must support INumber.</typeparam>
+    /// <param name="values">The list of values.</param>
+    /// <returns>
+    /// If the list has an odd number of values, returns the middle value; otherwise returns the 
+    /// average of the two middle values.
+    /// </returns>
+    /// <exception cref="ArgumentException">The list is empty.</exception>
+    public static double Median<T>(this IEnumerable<T> values) where T : INumber<T>
+    {
+        #region Preconditions
+        if (!values.Any())
+        {
+            throw new ArgumentException("No values given", nameof(values));
+        }
+        #endregion
+
+        IEnumerable<T> sortedValues = values.Order();
+        return values.Count() % 2 == 0
+            ? sortedValues.Skip((values.Count() / 2) - 1)
+                               .Take(2)
+                               .Select(x => Convert.ToDouble(x))
+                               .Average()
+            : Convert.ToDouble(sortedValues.Skip(values.Count() / 2).First());
+    }
+
+    /// <summary>
+    /// Return a list of the numbers whose value occurs most often. 
+    /// </summary>
+    /// <typeparam name="T">The type of the numbers in the list.</typeparam>
+    /// <param name="values">The list of numbers.</param>
+    /// <returns>A list containing the number(s) that occur most often.</returns>
+    /// <exception cref="ArgumentException">The list was empty.</exception>
+    public static IEnumerable<T> Mode<T>(this IEnumerable<T> values) where T : INumber<T>
+    {
+        #region Preconditions
+        if (!values.Any())
+        {
+            throw new ArgumentException("No values given", nameof(values));
+        }
+        #endregion
+
+        IDictionary<T, int> entries = new Dictionary<T, int>();
+        foreach (T value in values)
+        {
+            if (entries.ContainsKey(value))
+            {
+                entries[value]++;
+            }
+            else
+            {
+                entries.Add(value, 1);
+            }
+        }
+
+        IOrderedEnumerable<KeyValuePair<T, int>> sortedEntries
+            = entries.OrderByDescending(kvp => kvp.Value);
+        IEnumerable<T> results
+            = sortedEntries.Where(kvp => kvp.Value == sortedEntries.First().Value)
+                           .Select(kvp => kvp.Key);
+        return results;
+    }
+
+    /// <summary>
+    /// Return the sample standard deviation of a list of numbers.
+    /// </summary>
+    /// <typeparam name="T">The type of numbers in the list. Must implement INumber.</typeparam>
+    /// <param name="values">The list of numbers.</param>
+    /// <returns>The sample standard deviation.</returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="values"/> must have more than one value.
+    /// </exception>
+    public static double SampleStandardDeviation<T>(this IEnumerable<T> values) where T : INumber<T>
+    {
+        #region Preconditions
+        if (values.Count() <= 1)
+        {
+            throw new ArgumentException("Must have more than one value", nameof(values));
+        }
+        #endregion
+
+        double average = values.Select(x => Convert.ToDouble(x)).Average();
+        double sum = 0.0;
+        foreach (T item in values)
+        {
+            sum += Math.Pow(Convert.ToDouble(item) - average, 2);
+        }
+        return Math.Sqrt(1.0 / (values.Count() - 1) * sum);
+    }
+
+    /// <summary>
+    /// Return the population standard deviation of a list of numbers.
+    /// </summary>
+    /// <typeparam name="T">The type of numbers in the list. Must implement INumber.</typeparam>
+    /// <param name="values">The list of numbers.</param>
+    /// <returns>The population standard deviation.</returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="values"/> must have more than one value.
+    /// </exception>
+    public static double PopulationStandardDeviation<T>(this IEnumerable<T> values) where T : INumber<T>
+    {
+        #region Preconditions
+        if (values.Count() <= 1)
+        {
+            throw new ArgumentException("Must have more than one value", nameof(values));
+        }
+        #endregion
+
+        double average = values.Select(x => Convert.ToDouble(x)).Average();
+        double sum = 0.0;
+        foreach (T item in values)
+        {
+            sum += Math.Pow(Convert.ToDouble(item) - average, 2);
+        }
+        return Math.Sqrt(1.0 / values.Count() * sum);
+    }
 }

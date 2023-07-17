@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "StatisticsFunctionsApp (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "StatisticsFunctionsApp (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
